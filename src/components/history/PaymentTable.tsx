@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import { CreditCard } from "lucide-react";
 import type { PaymentRecord } from "@/types/payment";
 
@@ -8,9 +7,13 @@ const STATUS_COLOR: Record<PaymentRecord["status"], string> = {
   Rejected: "text-[#ef4444]",
 };
 
-export function PaymentTable({ rows }: { rows: PaymentRecord[] }) {
-  const navigate = useNavigate();
-
+export function PaymentTable({ 
+  rows,
+  onSelect
+}: { 
+  rows: PaymentRecord[]
+  onSelect: (id: string) => void
+}) {
   if (rows.length === 0) {
     return (
       <div className="rounded-[20px] border border-[var(--border)] bg-[var(--surface)] p-10 text-center text-sm text-[var(--muted)]">
@@ -22,10 +25,11 @@ export function PaymentTable({ rows }: { rows: PaymentRecord[] }) {
   return (
     <div className="flex flex-col divide-y divide-[var(--border)]">
       {rows.map((p) => (
-        <div
+        <button
           key={p.id}
-          onClick={() => navigate(`/history/${p.id}`)}
-          className="flex items-start gap-4 px-5 py-4 transition active:scale-[0.985] hover:bg-[var(--surface)] cursor-pointer"
+          type="button"
+          onClick={() => onSelect(p.id)}
+          className="w-full text-left flex items-start gap-4 px-5 py-4 transition active:scale-[0.985] hover:bg-[var(--surface)] cursor-pointer"
         >
           {/* Left: Icon with optional unread dot */}
           <div className="relative flex-shrink-0 pt-0.5">
@@ -60,7 +64,7 @@ export function PaymentTable({ rows }: { rows: PaymentRecord[] }) {
           <div className="flex-shrink-0 self-center text-[var(--muted)] text-lg leading-none opacity-60">
             ›
           </div>
-        </div>
+        </button>
       ))}
     </div>
   );

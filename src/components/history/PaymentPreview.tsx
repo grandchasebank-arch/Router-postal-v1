@@ -1,10 +1,16 @@
-import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, CreditCard, Download, Share2 } from "lucide-react";
+import { Download, Share2, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { PDFDownloadLink, Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import html2canvas from "html2canvas";
 import { usePaymentById } from "@/hooks/useHistory";
 import { Loader } from "@/components/shared/Loader";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { SheetClose } from "@/components/ui/sheet";
+
+interface PaymentPreviewProps {
+  id: string;
+}
 
 const STATUS_COLOR: Record<string, string> = {
   Approved: "text-[var(--success)]",
@@ -12,18 +18,79 @@ const STATUS_COLOR: Record<string, string> = {
   Rejected: "text-[#ef4444]",
 };
 
+const STATUS_BG: Record<string, string> = {
+  Approved: "bg-[#10b98120]",
+  Pending: "bg-[#f59e0b20]",
+  Rejected: "bg-[#ef444420]",
+};
+
 const pdfStyles = StyleSheet.create({
   page: {
-    padding: 40,
+    padding: 50,
     backgroundColor: "#ffffff",
+    fontFamily: "Helvetica",
+  },
+  container: {
+    marginBottom: 40,
   },
   header: {
-    fontSize: 20,
+    marginBottom: 40,
+    paddingBottom: 20,
+    borderBottomWidth: 2,
+    borderBottomColor: "#e5e7eb",
+  },
+  companyName: {
+    fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 30,
+    marginBottom: 4,
+    color: "#1f2937",
+  },
+  receiptTitle: {
+    fontSize: 14,
+    color: "#6b7280",
+    marginBottom: 15,
+  },
+  receiptNumber: {
+    fontSize: 11,
+    color: "#6b7280",
+    marginBottom: 2,
   },
   section: {
-    marginBottom: 20,
+    marginBottom: 25,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: "bold",
+    marginBottom: 12,
+    color: "#1f2937",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  amountSection: {
+    marginBottom: 30,
+    padding: 20,
+    backgroundColor: "#f9fafb",
+    borderRadius: 4,
+  },
+  amountLabel: {
+    fontSize: 11,
+    color: "#6b7280",
+    marginBottom: 4,
+  },
+  amountValue: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#1f2937",
+    marginBottom: 8,
+  },
+  statusBadge: {
+    fontSize: 10,
+    fontWeight: "bold",
+    color: "#10b981",
+    backgroundColor: "#d1fae5",
+    padding: 4,
+    borderRadius: 3,
+    display: "inline-block",
   },
   row: {
     flexDirection: "row",
@@ -34,12 +101,25 @@ const pdfStyles = StyleSheet.create({
     borderBottomColor: "#e5e7eb",
   },
   label: {
-    fontSize: 11,
+    fontSize: 10,
     color: "#6b7280",
+    fontWeight: "500",
   },
   value: {
-    fontSize: 12,
+    fontSize: 11,
+    color: "#1f2937",
     fontWeight: "500",
+  },
+  footer: {
+    marginTop: 40,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: "#e5e7eb",
+    textAlign: "center",
+  },
+  footerText: {
+    fontSize: 9,
+    color: "#9ca3af",
   },
 });
 
@@ -48,41 +128,80 @@ interface ReceiptPDFProps {
 }
 
 function ReceiptPDF({ payment }: ReceiptPDFProps) {
+  const currentDate = new Date().toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
   return (
     <Document>
       <Page size="A4" style={pdfStyles.page}>
-        <Text style={pdfStyles.header}>Payment Receipt</Text>
+        {/* Header */}
+        <View style={pdfStyles.header}>
+          <Text style={pdfStyles.companyName}>SpaceX Membership</Text>
+          <Text style={pdfStyles.receiptTitle}>Payment Receipt</Text>
+          <Text style={pdfStyles.receiptNumber}>Receipt #{payment.reference}</Text>
+        </View>
 
+        {/* Amount Section */}
+        <View style={pdfStyles.amountSection}>
+          <Text style={pdfStyles.amountLabel}>Total Amount</Text>
+          <Text style={pdfStyles.amountValue}>{payment.amount}</Text>
+          <Text
+            style={{
+              ...pdfStyles.statusBadge,
+              color: payment.status === "Approved" ? "#10b981" : "#f59e0b",
+              backgroundColor:
+                payment.status === "Approved" ? "#d1fae5" : "#fef3c7",
+            }}
+          >
+            {payment.status}
+          </Text>
+        </View>
+
+        {/* Details Section */}
         <View style={pdfStyles.section}>
+          <Text style={pdfStyles.sectionTitle}>Payment Details</Text>
           <View style={pdfStyles.row}>
-            <Text style={pdfStyles.label}>Tier</Text>
+            <Text style={pdfStyles.label}>Membership Tier</Text>
             <Text style={pdfStyles.value}>{payment.tier}</Text>
           </View>
           <View style={pdfStyles.row}>
-            <Text style={pdfStyles.label}>Amount</Text>
-            <Text style={pdfStyles.value}>{payment.amount}</Text>
-          </View>
-          <View style={pdfStyles.row}>
-            <Text style={pdfStyles.label}>Status</Text>
-            <Text style={pdfStyles.value}>{payment.status}</Text>
-          </View>
-          <View style={pdfStyles.row}>
-            <Text style={pdfStyles.label}>Date</Text>
+            <Text style={pdfStyles.label}>Payment Date</Text>
             <Text style={pdfStyles.value}>{payment.date}</Text>
           </View>
           <View style={pdfStyles.row}>
-            <Text style={pdfStyles.label}>Reference</Text>
-            <Text style={pdfStyles.value}>{payment.reference}</Text>
+            <Text style={pdfStyles.label}>Receipt Date</Text>
+            <Text style={pdfStyles.value}>{currentDate}</Text>
           </View>
+          <View style={pdfStyles.row}>
+            <Text style={pdfStyles.label}>Payment Status</Text>
+            <Text style={pdfStyles.value}>{payment.status}</Text>
+          </View>
+        </View>
+
+        {/* Terms Section */}
+        <View style={pdfStyles.section}>
+          <Text style={pdfStyles.sectionTitle}>Terms</Text>
+          <Text style={{ fontSize: 9, color: "#6b7280", lineHeight: 1.5 }}>
+            This payment receipt confirms the successful transaction for your SpaceX membership
+            tier upgrade. Your membership benefits are now active.
+          </Text>
+        </View>
+
+        {/* Footer */}
+        <View style={pdfStyles.footer}>
+          <Text style={pdfStyles.footerText}>
+            Generated on {currentDate} • This receipt is a valid proof of payment
+          </Text>
         </View>
       </Page>
     </Document>
   );
 }
 
-export default function PaymentPreview() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+export function PaymentPreview({ id }: PaymentPreviewProps) {
   const { data: payment, isLoading } = usePaymentById(id || "");
   const receiptRef = useRef<HTMLDivElement>(null);
   const [isSharing, setIsSharing] = useState(false);
@@ -103,7 +222,7 @@ export default function PaymentPreview() {
               title: `Receipt for ${payment?.tier} - ${payment?.date}`,
             });
           } catch (error) {
-            console.log("[v0] Share cancelled or failed");
+            console.log("Share cancelled or failed");
           }
         } else {
           // Fallback: download the image
@@ -116,7 +235,7 @@ export default function PaymentPreview() {
         }
       });
     } catch (error) {
-      console.error("[v0] Error sharing image:", error);
+      console.error("Error sharing image:", error);
     } finally {
       setIsSharing(false);
     }
@@ -124,7 +243,7 @@ export default function PaymentPreview() {
 
   if (isLoading) {
     return (
-      <div className="fixed inset-0 z-50 bg-[var(--background)] flex justify-center pt-12">
+      <div className="flex justify-center pt-12">
         <Loader size={24} />
       </div>
     );
@@ -132,102 +251,125 @@ export default function PaymentPreview() {
 
   if (!payment) {
     return (
-      <div className="fixed inset-0 z-50 bg-[var(--background)] flex flex-col items-center justify-center px-4">
+      <div className="flex flex-col items-center justify-center px-4 py-8">
         <p className="text-sm text-[var(--muted)]">Payment not found</p>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-[var(--background)] flex flex-col overflow-hidden">
-      {/* Header with back button and receipt label */}
-      <div className="flex items-center gap-4 px-5 pt-5 pb-6">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-[var(--border-bright)] bg-[var(--surface)] text-[var(--text)] transition hover:opacity-80"
-          aria-label="Back"
-        >
-          <ArrowLeft size={18} />
-        </button>
-
-        <div className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-[var(--surface)] border border-[var(--border)]">
-          <CreditCard size={24} className="text-[var(--muted)]" />
-          {!payment.read && (
-            <div className="absolute right-0 top-0 h-2 w-2 rounded-full bg-blue-500 border-2 border-[var(--background)]" />
-          )}
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <h1 className="font-semibold text-[var(--text)] truncate">
-            {payment.tier}
-          </h1>
-          <p className="text-xs text-[var(--muted)]">{payment.date}</p>
-        </div>
+    <div className="h-full flex flex-col">
+      {/* Header */}
+      <div className="relative flex items-center justify-center px-6 py-4 border-b border-[var(--border)]">
+        <SheetClose asChild>
+          <button
+            className="absolute left-4 h-8 w-8 flex items-center justify-center rounded-lg hover:bg-[var(--surface)] transition"
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
+        </SheetClose>
+        <h2 className="text-lg font-semibold text-[var(--text)]">Payment Receipt</h2>
       </div>
 
-      {/* Divider */}
-      <div className="border-t border-[var(--border)]" />
-
-      {/* Content - Receipt preview */}
+      {/* Content */}
       <div className="flex-1 overflow-y-auto">
-        <div ref={receiptRef} className="px-5 py-6">
-          {/* Receipt content with light background */}
-          <div className="rounded-xl bg-white p-6 text-[var(--text)]">
+        <div className="space-y-6 p-6">
+          {/* Amount Card - Prominent */}
+          <Card className="bg-gradient-to-br from-[var(--surface)] to-[var(--bg)] border-[var(--border)] p-6 space-y-3">
+            <div>
+              <p className="text-xs text-[var(--muted)] uppercase font-semibold tracking-wider">
+                Total Amount
+              </p>
+              <p className="text-4xl font-bold text-[var(--text)] mt-2">{payment.amount}</p>
+            </div>
+            <div className="pt-2">
+              <span
+                className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${STATUS_COLOR[payment.status]} ${STATUS_BG[payment.status]}`}
+              >
+                {payment.status}
+              </span>
+            </div>
+          </Card>
+
+          {/* Receipt Details Card */}
+          <Card className="border-[var(--border)] p-6 space-y-4" ref={receiptRef}>
+            <h3 className="text-sm font-semibold text-[var(--text)] uppercase tracking-wider">
+              Receipt Details
+            </h3>
+
             <div className="space-y-3">
-              <div className="flex justify-between items-start">
-                <span className="text-xs text-[var(--muted)] uppercase">Amount</span>
-                <span className="font-semibold text-lg">{payment.amount}</span>
+              {/* Membership Tier */}
+              <div className="flex justify-between items-start pb-3 border-b border-[var(--border)]">
+                <span className="text-xs text-[var(--muted)] uppercase font-medium">Membership Tier</span>
+                <span className="text-sm font-semibold text-[var(--text)]">{payment.tier}</span>
               </div>
-              <div className="border-t border-[var(--border)]" />
+
+              {/* Reference */}
+              <div className="flex justify-between items-start pb-3 border-b border-[var(--border)]">
+                <span className="text-xs text-[var(--muted)] uppercase font-medium">Reference</span>
+                <span className="text-sm font-mono text-[var(--text)]">{payment.reference}</span>
+              </div>
+
+              {/* Date */}
+              <div className="flex justify-between items-start pb-3 border-b border-[var(--border)]">
+                <span className="text-xs text-[var(--muted)] uppercase font-medium">Payment Date</span>
+                <span className="text-sm text-[var(--text)]">{payment.date}</span>
+              </div>
+
+              {/* Status */}
               <div className="flex justify-between items-start">
-                <span className="text-xs text-[var(--muted)] uppercase">Status</span>
+                <span className="text-xs text-[var(--muted)] uppercase font-medium">Status</span>
                 <span className={`text-sm font-semibold ${STATUS_COLOR[payment.status]}`}>
                   {payment.status}
                 </span>
               </div>
-              <div className="border-t border-[var(--border)]" />
-              <div className="flex justify-between items-start">
-                <span className="text-xs text-[var(--muted)] uppercase">Date</span>
-                <span className="text-sm">{payment.date}</span>
-              </div>
-              <div className="border-t border-[var(--border)]" />
-              <div className="flex justify-between items-start">
-                <span className="text-xs text-[var(--muted)] uppercase">Reference</span>
-                <span className="text-xs font-mono text-right">{payment.reference}</span>
-              </div>
             </div>
-          </div>
+          </Card>
+
+          {/* Terms & Conditions */}
+          <Card className="border-[var(--border)] p-4 bg-[var(--surface)] bg-opacity-50">
+            <p className="text-xs text-[var(--muted)] leading-relaxed">
+              This payment receipt confirms your successful transaction for SpaceX membership tier
+              upgrade. Your membership benefits are now active. Please keep this receipt for your
+              records.
+            </p>
+          </Card>
         </div>
       </div>
 
-      {/* Fixed bottom action buttons */}
-      <div className="border-t border-[var(--border)] bg-[var(--background)] px-5 py-4 flex gap-3">
-        {/* Download PDF Button */}
-        <PDFDownloadLink
-          document={<ReceiptPDF payment={payment} />}
-          fileName={`receipt-${payment.id}.pdf`}
-          className="flex-1"
-        >
-          {({ blob, url, loading, error }) => (
-            <button
-              className="w-full flex items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm font-semibold text-[var(--text)] transition hover:bg-white/5"
-              disabled={loading}
-            >
-              <Download size={16} />
-              <span>{loading ? "Generating..." : "Download PDF"}</span>
-            </button>
-          )}
-        </PDFDownloadLink>
+      {/* Action Buttons */}
+      <div className="border-t border-[var(--border)] px-6 py-4">
+        <div className="grid grid-cols-2 gap-3">
+          {/* Download PDF */}
+          <PDFDownloadLink
+            document={<ReceiptPDF payment={payment} />}
+            fileName={`receipt-${payment.id}.pdf`}
+          >
+            {({ loading }) => (
+              <Button
+                disabled={loading}
+                variant="outline"
+                className="w-full gap-2"
+                size="sm"
+              >
+                <Download size={16} />
+                <span>{loading ? "..." : "Download"}</span>
+              </Button>
+            )}
+          </PDFDownloadLink>
 
-        {/* Share as Image Button */}
-        <button
-          onClick={handleShareAsImage}
-          disabled={isSharing}
-          className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-[var(--text)] px-4 py-3 text-sm font-semibold text-[var(--bg)] transition hover:opacity-90 disabled:opacity-50"
-        >
-          <Share2 size={16} />
-          <span>{isSharing ? "Sharing..." : "Share"}</span>
-        </button>
+          {/* Share */}
+          <Button
+            onClick={handleShareAsImage}
+            disabled={isSharing}
+            className="w-full gap-2 bg-[var(--text)] text-[var(--bg)] hover:opacity-90"
+            size="sm"
+          >
+            <Share2 size={16} />
+            <span>{isSharing ? "..." : "Share"}</span>
+          </Button>
+        </div>
       </div>
     </div>
   );

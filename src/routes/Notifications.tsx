@@ -1,10 +1,14 @@
+import { useState } from 'react'
 import { Loader } from '@/components/shared/Loader'
 import { NotificationList } from '@/components/notifications/NotificationList'
-import { useMarkAllRead, useNotifications } from '@/hooks/useNotifications'
+import { NotificationPreview } from '@/components/notifications/NotificationPreview'
+import { useNotifications, useMarkAllRead } from '@/hooks/useNotifications'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 
 export default function Notifications() {
   const { data, isLoading } = useNotifications()
   const markAll = useMarkAllRead()
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   return (
     <>
@@ -34,8 +38,25 @@ export default function Notifications() {
           <Loader size={24} />
         </div>
       ) : (
-        <NotificationList items={data ?? []} />
+        <NotificationList items={data ?? []} onSelect={setSelectedId} />
       )}
+
+      {/* Notification Detail Drawer */}
+      <Sheet open={selectedId !== null} onOpenChange={(open) => !open && setSelectedId(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-lg p-0 overflow-hidden">
+          {selectedId && (
+            <NotificationPreviewDrawer id={selectedId} />
+          )}
+        </SheetContent>
+      </Sheet>
     </>
+  )
+}
+
+function NotificationPreviewDrawer({ id }: { id: string }) {
+  return (
+    <div className="h-full overflow-y-auto">
+      <NotificationPreview id={id} />
+    </div>
   )
 }

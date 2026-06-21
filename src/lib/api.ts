@@ -12,6 +12,53 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const SESSION_KEY = "spacex_session";
 const MEMBER_KEY = "member_id";
+const NOTIFICATIONS_KEY = "spacex_notifications";
+
+// ── Initial Notifications Data ──────────────────────────────────────────────
+const INITIAL_NOTIFICATIONS: AppNotification[] = [
+  {
+    id: "n1",
+    kind: "upgrade",
+    title: "Upgrade Request Approved",
+    message:
+      "Your Pioneer tier upgrade has been reviewed and approved. Welcome aboard.",
+    time: "2h ago",
+    unread: true,
+  },
+  {
+    id: "n2",
+    kind: "profit",
+    title: "Monthly Dividend Posted",
+    message: "Your March yield distribution has been credited to your wallet.",
+    time: "1d ago",
+    unread: true,
+  },
+  {
+    id: "n3",
+    kind: "event",
+    title: "Starbase Launch Window",
+    message:
+      "Next Starship orbital test scheduled — confirm your VIP attendance.",
+    time: "3d ago",
+    unread: false,
+  },
+  {
+    id: "n4",
+    kind: "badge",
+    title: "Member Badge Issued",
+    message: "Your digital VIP credentials are now active in your wallet.",
+    time: "1w ago",
+    unread: false,
+  },
+  {
+    id: "n5",
+    kind: "system",
+    title: "Security Notice",
+    message: "New sign-in detected from a recognized device.",
+    time: "2w ago",
+    unread: false,
+  },
+];
 
 // ── Auth ────────────────────────────────────────────────────────────────────
 export async function sendOTP(email: string) {
@@ -147,50 +194,22 @@ export async function submitUpgradeRequest(req: UpgradeRequest) {
 // ── Notifications ───────────────────────────────────────────────────────────
 export async function getNotifications(): Promise<AppNotification[]> {
   await wait(250);
-  return [
-    {
-      id: "n1",
-      kind: "upgrade",
-      title: "Upgrade Request Approved",
-      message:
-        "Your Pioneer tier upgrade has been reviewed and approved. Welcome aboard.",
-      time: "2h ago",
-      unread: true,
-    },
-    {
-      id: "n2",
-      kind: "profit",
-      title: "Monthly Dividend Posted",
-      message: "Your March yield distribution has been credited to your wallet.",
-      time: "1d ago",
-      unread: true,
-    },
-    {
-      id: "n3",
-      kind: "event",
-      title: "Starbase Launch Window",
-      message:
-        "Next Starship orbital test scheduled — confirm your VIP attendance.",
-      time: "3d ago",
-      unread: false,
-    },
-    {
-      id: "n4",
-      kind: "badge",
-      title: "Member Badge Issued",
-      message: "Your digital VIP credentials are now active in your wallet.",
-      time: "1w ago",
-      unread: false,
-    },
-    {
-      id: "n5",
-      kind: "system",
-      title: "Security Notice",
-      message: "New sign-in detected from a recognized device.",
-      time: "2w ago",
-      unread: false,
-    },
-  ];
+  if (typeof window === "undefined") return INITIAL_NOTIFICATIONS;
+  
+  const stored = localStorage.getItem(NOTIFICATIONS_KEY);
+  if (!stored) {
+    // First time: initialize with default data
+    localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(INITIAL_NOTIFICATIONS));
+    return INITIAL_NOTIFICATIONS;
+  }
+  
+  try {
+    return JSON.parse(stored);
+  } catch {
+    // Fallback if stored data is corrupted
+    localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(INITIAL_NOTIFICATIONS));
+    return INITIAL_NOTIFICATIONS;
+  }
 }
 
 export async function getNotificationById(
@@ -201,8 +220,27 @@ export async function getNotificationById(
   return notifications.find((n) => n.id === id) ?? null;
 }
 
+export async function markNotificationAsRead(
+  id: string
+): Promise<{ ok: boolean }> {
+  await wait(150);
+  if (typeof window === "undefined") return { ok: false };
+  
+  const notifications = await getNotifications();
+  const updated = notifications.map((n) =>
+    n.id === id ? { ...n, unread: false } : n
+  );
+  localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(updated));
+  return { ok: true };
+}
+
 export async function markAllNotificationsRead() {
   await wait(200);
+  if (typeof window === "undefined") return { ok: false };
+  
+  const notifications = await getNotifications();
+  const updated = notifications.map((n) => ({ ...n, unread: false }));
+  localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(updated));
   return { ok: true };
 }
 
