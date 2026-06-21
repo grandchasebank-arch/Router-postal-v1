@@ -38,14 +38,14 @@ Hooks are shell scripts that run automatically at defined moments. If a hook doe
 
 ```
 .github/hooks/
-├── pre-fix.sh          # Runs before any component edit — validates shadcn import paths
-├── post-fix.sh         # Runs after edits — checks for broken imports and TypeScript errors
-├── check-shadcn.sh     # Finds components using wrong import paths or non-shadcn UI
-├── audit-ui.sh         # Lists all broken/missing UI components across the src/ tree
-└── sync-types.sh       # Re-generates Supabase types from schema
+├── pre-fix.ps1          # Runs before any component edit — validates shadcn import paths
+├── post-fix.ps1         # Runs after edits — checks for broken imports and TypeScript errors
+├── check-shadcn.ps1     # Finds components using wrong import paths or non-shadcn UI
+├── audit-ui.ps1         # Lists all broken/missing UI components across the src/ tree
+└── sync-types.ps1       # Re-generates Supabase types from schema
 ```
 
-### Hook: `pre-fix.sh`
+### Hook: `pre-fix.ps1`
 
 ```bash
 #!/bin/bash
@@ -57,7 +57,7 @@ npx tsc --noEmit 2>&1 | head -40
 echo "✅ Pre-fix done"
 ```
 
-### Hook: `post-fix.sh`
+### Hook: `post-fix.ps1`
 
 ```bash
 #!/bin/bash
@@ -69,7 +69,7 @@ npx tsc --noEmit 2>&1 | head -40
 echo "✅ Post-fix done"
 ```
 
-### Hook: `check-shadcn.sh`
+### Hook: `check-shadcn.ps1`
 
 ```bash
 #!/bin/bash
@@ -83,7 +83,7 @@ grep -rn "import.*Button\|import.*Card\|import.*Dialog\|import.*Sheet\|import.*B
 echo "✅ shadcn check done"
 ```
 
-### Hook: `audit-ui.sh`
+### Hook: `audit-ui.ps1`
 
 ```bash
 #!/bin/bash
@@ -114,7 +114,7 @@ echo "=================="
 echo "✅ Audit complete"
 ```
 
-### Hook: `sync-types.sh`
+### Hook: `sync-types.ps1`
 
 ```bash
 #!/bin/bash
@@ -368,7 +368,7 @@ VITE_SUPABASE_ANON_KEY=<your_supabase_anon_key>
 
 1. **Always search `src/components/ui/` before creating a custom component.**
 2. **Never import from `shadcn/ui` directly** — always use `@/components/ui/<name>`.
-3. **Run `audit-ui.sh` first** when starting a fix session to get a full picture.
+3. **Run `audit-ui.ps1` first** when starting a fix session to get a full picture.
 4. **One file per fix.** Don't refactor unrelated files.
 5. **TypeScript must pass** after every change (`npx tsc --noEmit`).
 6. **Theme variables:** dark mode is default (no `dark` class), light mode adds `.light` class on `<html>`. Use CSS variables, not hardcoded hex.
